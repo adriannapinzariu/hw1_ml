@@ -29,12 +29,12 @@ warnings.filterwarnings("ignore", category=sklearn.exceptions.ConvergenceWarning
 #####################
 
 target_idx=0                                        #Index of Target variable
-cross_val=0                                         #Control Switch for CV
+cross_val=1                                         #Control Switch for CV
 norm_target=0                                       #Normalize target switch
 norm_features=0                                     #Normalize target switch
 binning=0                                           #Control Switch for Bin Target
 bin_cnt=2                                           #If bin target, this sets number of classes
-feat_select=0                                       #Control Switch for Feature Selection
+feat_select=1                                       #Control Switch for Feature Selection
 fs_type=2                                           #Feature Selection type (1=Stepwise Backwards Removal, 2=Wrapper Select, 3=Univariate Selection)
 lv_filter=0                                         #Control switch for low variance filter on features
 feat_start=1                                        #Start column of features
@@ -143,7 +143,7 @@ if feat_select==1:
     ##1) Run Feature Selection #######
     #Wrapper Select via model
     if fs_type==2:
-        rgr = '''Replace comment HERE''' 
+        rgr = DecisionTreeRegressor(criterion='friedman_mse', splitter='best', max_depth=None, min_samples_split=3, min_samples_leaf=1, max_features=None, random_state=rand_st)
         sel = SelectFromModel(rgr, prefit=False, threshold='mean', max_features=None)                   
         print ('Wrapper Select: ')
 
@@ -188,26 +188,27 @@ data_train, data_test, target_train, target_test = train_test_split(data_np, tar
 ####Regressors####
 if binning==0 and cross_val==0:
     #SciKit Decision Tree Regressor
-    rgr = DecisionTreeRegressor(criterion='mse', splitter='best', max_depth=None, min_samples_split=3, min_samples_leaf=1, max_features=None, random_state=rand_st)
+    rgr = DecisionTreeRegressor(criterion='friedman_mse', splitter='best', max_depth=None, min_samples_split=3, min_samples_leaf=1, max_features=None, random_state=rand_st)
     rgr.fit(data_train, target_train)
 
-    scores_RMSE = '''Replace comment HERE'''
+    scores_RMSE = math.sqrt(metrics.mean_squared_error(target_test, rgr.predict(data_test)))
     print('Decision Tree RMSE:', scores_RMSE)
-    scores_Expl_Var = '''Replace comment HERE'''
+    scores_Expl_Var = metrics.explained_variance_score(target_test, rgr.predict(data_test))
     print('Decision Tree Expl Var:', scores_Expl_Var)
 
 ####Cross-Val Regressors####
 if binning==0 and cross_val==1:
     #Setup Crossval regression scorers
-    scorers = '''Replace comment HERE''' 
+    scorers = {'Neg_MSE': 'neg_mean_squared_error', 'expl_var': 'explained_variance'}
     
     #SciKit Decision Tree Regressor - Cross Val
     start_ts=time.time()
-    rgr = DecisionTreeRegressor(criterion='mse', splitter='best', max_depth=None, min_samples_split=3, min_samples_leaf=1, max_features=None, random_state=rand_st)
+    rgr = DecisionTreeRegressor(criterion='squared_error', splitter='best', max_depth=None, min_samples_split=3, min_samples_leaf=1, max_features=None, random_state=rand_st)
     scores = cross_validate(rgr, data_np, target_np, scoring=scorers, cv=5)
 
-    scores_RMSE = '''Replace comment HERE'''                                                                        #Turns negative MSE scores into RMSE
-    scores_Expl_Var = '''Replace comment HERE'''
+    scores_RMSE = np.asarray([math.sqrt(-x) for x in scores['test_Neg_MSE']])
+                                                                 #Turns negative MSE scores into RMSE
+    scores_Expl_Var = scores['test_expl_var']
     print("Decision Tree RMSE:: %0.2f (+/- %0.2f)" % ((scores_RMSE.mean()), (scores_RMSE.std() * 2)))
     print("Decision Tree Expl Var: %0.2f (+/- %0.2f)" % ((scores_Expl_Var.mean()), (scores_Expl_Var.std() * 2)))
     print("CV Runtime:", time.time()-start_ts)

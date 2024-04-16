@@ -29,7 +29,7 @@ warnings.filterwarnings("ignore", category=sklearn.exceptions.ConvergenceWarning
 #####################
 
 target_idx=0                                        #Index of Target variable
-cross_val=0                                         #Control Switch for CV
+cross_val=1                                         #Control Switch for CV
 norm_target=0                                       #Normalize target switch
 norm_features=0                                     #Normalize target switch
 binning=0                                           #Control Switch for Bin Target
@@ -113,27 +113,27 @@ data_train, data_test, target_train, target_test = train_test_split(data_np, tar
 ####Classifiers####
 if cross_val==0:    
     #SciKit Decision Tree
-    clf = DecisionTreeClassifier(criterion='gini', splitter='best', max_depth=None, min_samples_split=3, min_samples_leaf=1, max_features=None, random_state=rand_st)
+    clf = DecisionTreeClassifier(criterion='entropy', splitter='best', max_depth=None, min_samples_split=3, min_samples_leaf=1, max_features=None, random_state=rand_st)
     clf.fit(data_train, target_train)
 
-    scores_ACC = '''Replace comment HERE'''
+    scores_ACC = clf.score(data_test, target_test)
     print('Decision Tree Acc:', scores_ACC)
-    scores_AUC = '''Replace comment HERE'''
+    scores_AUC = metrics.roc_auc_score(target_test, clf.predict_proba(data_test)[:,1])
     print('Decision Tree AUC:', scores_AUC)                                                                     #AUC only works with binary classes, not multiclass            
  
 ####Cross-Val Classifiers####
 if cross_val==1:
     #Setup Crossval classifier scorers
-    scorers = '''Replace comment HERE'''
+    scorers = {'Accuracy': 'accuracy', 'roc_auc': 'roc_auc'}
     
     #SciKit Decision Tree - Cross Val
     start_ts=time.time()
     clf = DecisionTreeClassifier(criterion='gini', splitter='best', max_depth=None, min_samples_split=3, min_samples_leaf=1, max_features=None, random_state=rand_st)
     scores = cross_validate(clf, data_np, target_np, scoring=scorers, cv=5)
 
-    scores_Acc = '''Replace comment HERE'''
+    scores_Acc = scores['test_Accuracy']
     print("Decision Tree Acc: %0.2f (+/- %0.2f)" % (scores_Acc.mean(), scores_Acc.std() * 2))                                                                                                    
-    scores_AUC= '''Replace comment HERE'''                                                                      #Only works with binary classes, not multiclass
+    scores_AUC= scores['test_roc_auc']                                                                   #Only works with binary classes, not multiclass
     print("Decision Tree AUC: %0.2f (+/- %0.2f)" % (scores_AUC.mean(), scores_AUC.std() * 2))                           
     print("CV Runtime:", time.time()-start_ts)
 
